@@ -22,9 +22,10 @@ def get_by_user_and_week(issues: list[Issue]) -> list[Worklog]:
         return []
 
     worklogs_by_week: list[Worklog] = []
+    now = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     for w in worklogs:
         t = datetime.fromisoformat(w.created)
-        if t < datetime.now(timezone.utc) - timedelta(days=6):
+        if t < now - timedelta(days=6):
             continue
         worklogs_by_week.append(w)
 
