@@ -5,14 +5,15 @@ import logging
 import os
 import sys
 
-from aiogram import Bot, Dispatcher, html
+from aiogram import Bot, Dispatcher, F, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message
+from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
 
 import jirabot.jira.client as client
 import jirabot.jira.worklogs as worklog
+import jirabot.ui.filters as filters
 from jirabot.jira.worklogs import Worklog
 from jirabot.log_helper import build_loger
 
@@ -40,6 +41,18 @@ def summary(timetrack: int) -> tuple[int, int, int]:
     return result
 
 
+def build_keyboard(issues: list[str]) -> ReplyKeyboardMarkup:
+    kb = [
+        [KeyboardButton(text=k) for k in issues],
+    ]
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=kb,
+        resize_keyboard=True,
+        input_field_placeholder="На какую задачу записать?",
+        one_time_keyboard=True)
+    return keyboard
+
+
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
     await message.answer(f"Hello, {html.bold(message.from_user.full_name)}!")
@@ -63,9 +76,11 @@ async def command_status_handler(message: Message):
         f"Привет, {message.from_user.full_name}",
         "За последнюю неделю вы работали над:", ""
     ]
+    issues_key = []
     for i in issues:
         line = f'[{i.key}]: {i.fields.summary}'
         output.append(line)
+        issues_key.append(i.key)
         output.append(f"{client.JIRA_SITE}/browse/{i.key}")
         output.append('')
 
@@ -73,7 +88,18 @@ async def command_status_handler(message: Message):
         f'Залогировано: {result[0]:02d}h {result[1]:02d}m {result[2]:02d}s')
     text = '\n'.join(output)
     log.info(text)
-    await message.reply(text)
+
+    await message.reply(text, reply_markup=build_keyboard(issues_key))
+
+
+@dp.message(F.text.func(lambda t: filters.issue_filter(t)))
+async def process_find_word(message: Message):
+    await message.answer('Сколько списать?')
+
+
+@dp.message()
+async def process_message(message: Message):
+    await message.answer('Введите корректный номер задачи')
 
 
 async def main() -> None:
