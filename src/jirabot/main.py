@@ -9,13 +9,19 @@ from aiogram import Bot, Dispatcher, F, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
-from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
+from aiogram.types import Message
 
 import jirabot.jira.client as client
 import jirabot.jira.worklogs as worklog
+import jirabot.ui.common as ui_common
 import jirabot.ui.filters as filters
+import jirabot.utils as utils
 from jirabot.jira.worklogs import Worklog
 from jirabot.log_helper import build_loger
+from jirabot.ui.keyboard import build_keyboard
+from jirabot.ui.text import (AUTH_ERROR, HOW_MUCH_TIME_DID_IT_TAKE,
+                             INCORRECT_ISSUE, ISSUE_NOT_FOUND_F,
+                             ISSUES_BY_WEEK_NOT_FOUND)
 
 JIRA_BOT_TELEGRAM_TOKEN = os.environ.get('JIRA_BOT_TELEGRAM_TOKEN')
 
@@ -34,25 +40,6 @@ except Exception as e:
 dp = Dispatcher()
 
 
-def summary(timetrack: int) -> tuple[int, int, int]:
-    hours, remainder = divmod(timetrack, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    result = (int(hours), int(minutes), int(seconds))
-    return result
-
-
-def build_keyboard(issues: list[str]) -> ReplyKeyboardMarkup:
-    kb = [
-        [KeyboardButton(text=k) for k in issues],
-    ]
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=kb,
-        resize_keyboard=True,
-        input_field_placeholder="На какую задачу записать?",
-        one_time_keyboard=True)
-    return keyboard
-
-
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
     await message.answer(f"Hello, {html.bold(message.from_user.full_name)}!")
@@ -62,28 +49,19 @@ async def command_start_handler(message: Message) -> None:
 async def command_status_handler(message: Message):
     jira = client.auth()
     if not jira:
-        await message.reply('Не удалось авторизироваться в Jira')
+        await message.reply(AUTH_ERROR)
         return -1
 
     issues = worklog.get_issues_by_user_and_week(jira=jira)
     if not issues:
-        await message.reply('Задач за неделю не найдено')
+        await message.reply(ISSUES_BY_WEEK_NOT_FOUND)
         return
     worklogs: list[Worklog] = worklog.get_by_user_and_week(issues)
     timetrack = sum([w.timeSpentSeconds for w in worklogs])
-    result = summary(timetrack)
-    output = [
-        f"Привет, {message.from_user.full_name}",
-        "За последнюю неделю вы работали над:", ""
-    ]
-    issues_key = []
-    for i in issues:
-        line = f'[{i.key}]: {i.fields.summary}'
-        output.append(line)
-        issues_key.append(i.key)
-        output.append(f"{client.JIRA_SITE}/browse/{i.key}")
-        output.append('')
-
+    result = utils.summary(timetrack)
+    output = ui_common.create_greetings(message)
+    issues_key, descriptions = ui_common.create_issue_names(issues)
+    output += descriptions
     output.append(
         f'Залогировано: {result[0]:02d}h {result[1]:02d}m {result[2]:02d}s')
     text = '\n'.join(output)
@@ -92,18 +70,26 @@ async def command_status_handler(message: Message):
     await message.reply(text, reply_markup=build_keyboard(issues_key))
 
 
-@dp.message(F.text.func(lambda t: filters.issue_filter(t)))
+@dp.message(F.text.func(filters.issue_filter))
 async def process_find_word(message: Message):
-    await message.answer('Сколько списать?')
+    jira = client.auth()
+    if not message.text or not jira:
+        await message.answer(AUTH_ERROR)
+        return
+    if (issue := jira.issue(message.text)) is None:
+        await message.answer(ISSUE_NOT_FOUND_F.format(message.text))
+        return
+    line = [f"[{message.text}]: {issue.fields.summary}"]
+    line.append(HOW_MUCH_TIME_DID_IT_TAKE)
+    await message.answer('\n'.join(line))
 
 
 @dp.message()
 async def process_message(message: Message):
-    await message.answer('Введите корректный номер задачи')
+    await message.answer(INCORRECT_ISSUE)
 
 
 async def main() -> None:
-    # And the run events dispatching
     await dp.start_polling(bot)
 
 
