@@ -1,1 +1,2 @@
 pylogus==0.1.0
+jira
