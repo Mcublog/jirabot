@@ -6,3 +6,4 @@ HOW_MUCH_TIME_DID_IT_TAKE = 'Сколько списать?'
 GREETING_F = 'Привет, {}'
 YOU_WORKING_WITH = "За последнюю неделю вы работали над:"
 BOT_CREATION_ERROR = 'Проверте файл конфигурации бота, особенно корректность токена'
+WHAT_TASK_SHOULD_I_TRACK = "На какую задачу записать?"

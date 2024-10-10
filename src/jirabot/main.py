@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import os
 import sys
 
 from aiogram import Bot, Dispatcher, F, html
@@ -16,10 +15,10 @@ import jirabot.jira.client as client
 import jirabot.jira.worklogs as worklog
 import jirabot.ui.common as ui_common
 import jirabot.ui.filters as filters
+import jirabot.ui.keyboard as keyboards
 import jirabot.utils as utils
 from jirabot.jira.worklogs import Worklog
 from jirabot.log_helper import build_loger
-from jirabot.ui.keyboard import build_keyboard
 from jirabot.ui.text import (AUTH_ERROR, BOT_CREATION_ERROR,
                              HOW_MUCH_TIME_DID_IT_TAKE, INCORRECT_ISSUE,
                              ISSUE_NOT_FOUND_F, ISSUES_BY_WEEK_NOT_FOUND)
@@ -61,11 +60,12 @@ async def command_status_handler(message: Message):
     issues_key, descriptions = ui_common.create_issue_names(issues)
     output += descriptions
     output.append(
-        f'Залогировано: {result[0]:02d}h {result[1]:02d}m {result[2]:02d}s')
+        f'Logged: {result[0]:02d}h {result[1]:02d}m {result[2]:02d}s')
     text = '\n'.join(output)
     log.info(text)
 
-    await message.reply(text, reply_markup=build_keyboard(issues_key))
+    await message.reply(text,
+                        reply_markup=keyboards.issue_keyboard(issues_key))
 
 
 @dp.message(F.text.func(filters.issue_filter))
@@ -78,8 +78,8 @@ async def process_find_word(message: Message):
         await message.answer(ISSUE_NOT_FOUND_F.format(message.text))
         return
     line = [f"[{message.text}]: {issue.fields.summary}"]
-    line.append(HOW_MUCH_TIME_DID_IT_TAKE)
-    await message.answer('\n'.join(line))
+    await message.reply('\n'.join(line),
+                        reply_markup=keyboards.time_spent_keyboard())
 
 
 @dp.message()
