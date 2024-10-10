@@ -1,7 +1,8 @@
+import jira.config as cfg
 from aiogram.types import Message
 from jira import Issue
 
-import jirabot.jira.client as client
+import jirabot.config as cfg
 from jirabot.ui.text import GREETING_F, YOU_WORKING_WITH
 
 
@@ -22,6 +23,6 @@ def create_issue_names(issues: list[Issue]) -> tuple[list[str], list[str]]:
         line = f'[{i.key}]: {i.fields.summary}'
         descriptions.append(line)
         issues_key.append(i.key)
-        descriptions.append(f"{client.JIRA_SITE}/browse/{i.key}")
+        descriptions.append(f"{cfg.JIRA_SITE}/browse/{i.key}")
         descriptions.append('')
     return issues_key, descriptions

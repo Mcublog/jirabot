@@ -11,6 +11,7 @@ from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
+import jirabot.config as cfg
 import jirabot.jira.client as client
 import jirabot.jira.worklogs as worklog
 import jirabot.ui.common as ui_common
@@ -19,22 +20,19 @@ import jirabot.utils as utils
 from jirabot.jira.worklogs import Worklog
 from jirabot.log_helper import build_loger
 from jirabot.ui.keyboard import build_keyboard
-from jirabot.ui.text import (AUTH_ERROR, HOW_MUCH_TIME_DID_IT_TAKE,
-                             INCORRECT_ISSUE, ISSUE_NOT_FOUND_F,
-                             ISSUES_BY_WEEK_NOT_FOUND)
-
-JIRA_BOT_TELEGRAM_TOKEN = os.environ.get('JIRA_BOT_TELEGRAM_TOKEN')
+from jirabot.ui.text import (AUTH_ERROR, BOT_CREATION_ERROR,
+                             HOW_MUCH_TIME_DID_IT_TAKE, INCORRECT_ISSUE,
+                             ISSUE_NOT_FOUND_F, ISSUES_BY_WEEK_NOT_FOUND)
 
 # Configure logging
 log = build_loger('bot', logging.INFO)
 
 # Initialize Bot instance with default bot properties which will be passed to all API calls
 try:
-    bot = Bot(token=JIRA_BOT_TELEGRAM_TOKEN,
+    bot = Bot(token=cfg.JIRA_BOT_TELEGRAM_TOKEN,
               default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 except Exception as e:
-    log.error(e)
-    log.info('Проверте файл конфигурации бота, особенно корректность токена')
+    log.info(BOT_CREATION_ERROR)
     sys.exit(-1)
 
 dp = Dispatcher()
@@ -94,4 +92,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    log.info("Started")
     asyncio.run(main())
