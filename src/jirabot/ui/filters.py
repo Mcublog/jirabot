@@ -10,3 +10,6 @@ def issue_filter(text:str) -> bool:
     if not number.isdecimal():
         return False
     return True
+
+def worktime_filter(text:str) -> bool:
+    return text in  ('1d', '4h', '1h')

@@ -17,11 +17,12 @@ import jirabot.ui.common as ui_common
 import jirabot.ui.filters as filters
 import jirabot.ui.keyboard as keyboards
 import jirabot.utils as utils
-from jirabot.jira.worklogs import Worklog
+from jirabot.jira.worklogs import UserIssue, Worklog
 from jirabot.log_helper import build_loger
-from jirabot.ui.text import (AUTH_ERROR, BOT_CREATION_ERROR,
-                             HOW_MUCH_TIME_DID_IT_TAKE, INCORRECT_ISSUE,
-                             ISSUE_NOT_FOUND_F, ISSUES_BY_WEEK_NOT_FOUND)
+from jirabot.ui.text import (ADD_COMMENT, AUTH_ERROR, BOT_CREATION_ERROR,
+                             INCORRECT_ISSUE, ISSUE_NOT_FOUND_F,
+                             ISSUES_BY_WEEK_NOT_FOUND, TIME_LOGGED_FAILED,
+                             TIME_LOGGED_SUCCESS)
 
 # Configure logging
 log = build_loger('bot', logging.INFO)
@@ -35,7 +36,7 @@ except Exception as e:
     sys.exit(-1)
 
 dp = Dispatcher()
-
+g_issue = UserIssue()
 
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
@@ -63,7 +64,8 @@ async def command_status_handler(message: Message):
         f'Logged: {result[0]:02d}h {result[1]:02d}m {result[2]:02d}s')
     text = '\n'.join(output)
     log.info(text)
-
+    global g_issue
+    g_issue = UserIssue()
     await message.reply(text,
                         reply_markup=keyboards.issue_keyboard(issues_key))
 
@@ -78,13 +80,44 @@ async def process_find_word(message: Message):
         await message.answer(ISSUE_NOT_FOUND_F.format(message.text))
         return
     line = [f"[{message.text}]: {issue.fields.summary}"]
+
+    global g_issue
+    g_issue.userd_id = message.from_user.id
+    g_issue.issue_key = issue.key
+    log.info(f"{g_issue}")
+
     await message.reply('\n'.join(line),
                         reply_markup=keyboards.time_spent_keyboard())
 
 
+@dp.message(F.text.func(filters.worktime_filter))
+async def process_worktime(message: Message):
+    time_spent = message.text
+    log.info(time_spent)
+
+    global g_issue
+    g_issue.work_time = message.text
+    return message.answer(ADD_COMMENT)
+
 @dp.message()
 async def process_message(message: Message):
-    await message.answer(INCORRECT_ISSUE)
+    global g_issue
+    if not g_issue.is_filled():
+        await message.answer(INCORRECT_ISSUE)
+
+    if (jira := client.auth()) is None:
+        return await message.answer(AUTH_ERROR)
+
+    ret = jira.add_worklog(
+        issue = g_issue.issue_key,
+        timeSpent = g_issue.work_time,
+        comment = message.text
+    )
+    # log.info(ret)
+    g_issue = UserIssue()
+    if isinstance(ret, Worklog):
+        return await message.answer(TIME_LOGGED_SUCCESS)
+    return await message.answer(TIME_LOGGED_FAILED)
 
 
 async def main() -> None:

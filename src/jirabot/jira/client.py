@@ -1,5 +1,3 @@
-import os
-
 from jira import JIRA, exceptions
 
 import jirabot.config as cfg
