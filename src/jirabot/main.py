@@ -20,9 +20,10 @@ import jirabot.utils as utils
 from jirabot.jira.worklogs import UserIssue, Worklog
 from jirabot.log_helper import build_loger
 from jirabot.ui.text import (ADD_COMMENT, AUTH_ERROR, BOT_CREATION_ERROR,
-                             INCORRECT_ISSUE, ISSUE_NOT_FOUND_F,
-                             ISSUES_BY_WEEK_NOT_FOUND, TIME_LOGGED_FAILED,
-                             TIME_LOGGED_SUCCESS)
+                             CURRENT_VERSION_F, INCORRECT_ISSUE,
+                             ISSUE_NOT_FOUND_F, ISSUES_BY_WEEK_NOT_FOUND,
+                             TIME_LOGGED_FAILED, TIME_LOGGED_SUCCESS)
+from jirabot.version import VERSION
 
 # Configure logging
 log = build_loger('bot', logging.INFO)
@@ -42,6 +43,10 @@ g_issue = UserIssue()
 async def command_start_handler(message: Message) -> None:
     await message.answer(f"Hello, {html.bold(message.from_user.full_name)}!")
 
+
+@dp.message(Command("version"))
+async def command_version_handler(message: Message):
+    await message.reply(CURRENT_VERSION_F.format(VERSION))
 
 @dp.message(Command("status"))
 async def command_status_handler(message: Message):
