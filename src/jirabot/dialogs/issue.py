@@ -34,7 +34,9 @@ class LogIssue(StatesGroup):
     choosing_comment = State()
 
 
-@issue_router.message(StateFilter(None), Command("status"))
+@issue_router.message(
+    StateFilter(None, LogIssue.choosing_issue_key,
+                LogIssue.choosing_work_time), Command("status"))
 async def command_status_handler(message: Message, state: FSMContext):
     jira = client.auth()
     if not jira:
@@ -63,7 +65,7 @@ async def command_status_handler(message: Message, state: FSMContext):
 
 
 @issue_router.message(LogIssue.choosing_issue_key,
-                     F.text.func(filters.issue_filter))
+                      F.text.func(filters.issue_filter))
 async def process_find_word(message: Message, state: FSMContext):
     jira = client.auth()
     if not message.text or not jira:
@@ -84,8 +86,13 @@ async def process_find_word(message: Message, state: FSMContext):
     await state.set_state(LogIssue.choosing_work_time)
 
 
+@issue_router.message(LogIssue.choosing_issue_key)
+async def incorrect_issue_handler(message: Message):
+    await message.reply(INCORRECT_ISSUE)
+
+
 @issue_router.message(LogIssue.choosing_work_time,
-                     F.text.func(filters.worktime_filter))
+                      F.text.func(filters.worktime_filter))
 async def process_worktime(message: Message, state: FSMContext):
     if not message.text:
         await message.answer(INCORRECT_WORKTIME)
@@ -100,6 +107,12 @@ async def process_worktime(message: Message, state: FSMContext):
 
     await message.answer(ADD_COMMENT)
     await state.set_state(LogIssue.choosing_comment)
+
+
+@issue_router.message(LogIssue.choosing_work_time)
+async def incorrect_worktime_hanlder(message: Message):
+    await message.reply(INCORRECT_WORKTIME,
+                        reply_markup=keyboards.time_spent_keyboard())
 
 
 @issue_router.message(LogIssue.choosing_comment)
@@ -123,5 +136,3 @@ async def process_comment(message: Message, state: FSMContext):
     await message.answer(answer)
     await state.clear()
     await state.set_data(asdict(UserIssue()))
-
-
