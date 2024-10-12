@@ -51,7 +51,11 @@ async def command_status_handler(message: Message, state: FSMContext):
     timetrack = sum([w.timeSpentSeconds for w in worklogs])
     result = utils.summary(timetrack)
     output = ui_common.create_greetings(message)
-    issues_key, descriptions = ui_common.create_issue_names(issues)
+    if issue_dict := await state.get_data():
+        current_issue = UserIssue(**issue_dict)
+    else:
+        current_issue = UserIssue()
+    current_issue.issues, descriptions = ui_common.create_issue_names(issues)
     output += descriptions
     output.append(
         f'Logged: {result[0]:02d}h {result[1]:02d}m {result[2]:02d}s')
@@ -59,9 +63,10 @@ async def command_status_handler(message: Message, state: FSMContext):
     log.info(text)
 
     await message.answer(text,
-                         reply_markup=keyboards.issue_keyboard(issues_key))
+                         reply_markup=keyboards.issue_keyboard(
+                             current_issue.issues))
     await state.set_state(LogIssue.choosing_issue_key)
-    await state.set_data(asdict(UserIssue()))
+    await state.set_data(asdict(current_issue))
 
 
 @issue_router.message(LogIssue.choosing_issue_key,
@@ -87,8 +92,11 @@ async def process_find_word(message: Message, state: FSMContext):
 
 
 @issue_router.message(LogIssue.choosing_issue_key)
-async def incorrect_issue_handler(message: Message):
-    await message.reply(INCORRECT_ISSUE)
+async def incorrect_issue_handler(message: Message, state: FSMContext):
+    current_issue = UserIssue(**await state.get_data())
+    await message.reply(INCORRECT_ISSUE,
+                        reply_markup=keyboards.issue_keyboard(
+                            current_issue.issues))
 
 
 @issue_router.message(LogIssue.choosing_work_time,
@@ -129,8 +137,7 @@ async def process_comment(message: Message, state: FSMContext):
     ret = jira.add_worklog(issue=current_issue.issue_key,
                            timeSpent=current_issue.work_time,
                            comment=message.text)
-    # log.info(ret)
-    # g_issue = UserIssue()
+
     answer = TIME_LOGGED_SUCCESS if isinstance(ret,
                                                Worklog) else TIME_LOGGED_FAILED
     await message.answer(answer)

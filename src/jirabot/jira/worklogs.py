@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 from jira import JIRA, Issue, Worklog
@@ -9,6 +9,7 @@ class UserIssue:
     userd_id: int = -1
     issue_key: str = ""
     work_time: str = ""
+    issues: list[str] = field(default_factory=list)
 
     def is_filled(self) -> bool:
         if self.userd_id == -1:
