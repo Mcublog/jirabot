@@ -12,6 +12,7 @@ from aiogram.types import Message
 
 import jirabot.database.db as db
 import jirabot.jira.client as client
+import jirabot.ui.text as text
 from jirabot.log_helper import build_loger
 from jirabot.states.registration import RegistartionStates, RegistationData
 
@@ -25,13 +26,10 @@ reg_router = Router()
 async def command_start_handler(message: Message, state: FSMContext) -> None:
     reg_data = RegistationData()
     reg_data.user_id = message.from_user.id
-    await message.answer(f"""Привет, {html.bold(message.from_user.full_name)}
-Для работы мне потребуются некоторые данные:
-    * Домен вашей Jira например: https://yourcomanyname.atlassian.net
-    * Email к которому привязан Jira аккаунт
-    * Токен дял достпупа к Jira API: https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/
-    """)
-    await message.answer("Введите домен Jira")
+    await message.answer(
+        text.INFO_FOR_REGISTRATION_F.format(
+            html.bold(message.from_user.full_name)))
+    await message.answer(text.GET_JIRA_SITE)
     await state.set_state(RegistartionStates.getting_site)
     await state.set_data(asdict(reg_data))
 
@@ -42,7 +40,7 @@ async def site_handler(message: Message, state: FSMContext) -> None:
     reg_data.site = message.text
     await state.set_data(asdict(reg_data))
     await state.set_state(RegistartionStates.getting_email)
-    await message.answer("Введите Ваш Jira email")
+    await message.answer(text.GET_JIRA_EMAIL)
 
 
 @reg_router.message(StateFilter(RegistartionStates.getting_email))
@@ -51,7 +49,7 @@ async def email_handler(message: Message, state: FSMContext) -> None:
     reg_data.email = message.text
     await state.set_data(asdict(reg_data))
     await state.set_state(RegistartionStates.getting_token)
-    await message.answer("Введите Ваш Jira токен")
+    await message.answer(text.GET_JIRA_TOKEN)
 
 
 @reg_router.message(StateFilter(RegistartionStates.getting_token))
@@ -66,18 +64,18 @@ async def token_handler(message: Message, state: FSMContext) -> None:
 
     if client.auth(reg_data) is None:
         db.delete_by_user_id(reg_data.user_id)
-        return await message.answer(
-            "Не удалось авторизирвоаться в Jira API, проверте свои данные и попробуйте ввести из снова. /start"
-        )
-
-    await message.answer("Отлично Вы успешно зарегистровались. Приступим?😉 /status")
+        await message.answer(text.CREDENTIAL_ERROR)
+        return
+    log.info(f"user {message.from_user.id} added")
+    await message.answer(text.CREDENTIAL_OK)
 
 
 @reg_router.message(Command("stop"), StateFilter(None))
 async def stop_handler(message: Message, state: FSMContext) -> None:
     if not db.get_reg_date_by_user_id(message.from_user.id):
-        await message.answer("Хммм, уже уходите? А ведь вы даже не зарегистрированы")
+        await message.answer(text.TRY_DELETE_NOT_REG_USER)
     else:
         db.delete_by_user_id(message.from_user.id)
-        await message.answer("Жаль расстоваться с Вами😢")
+        log.info(f"user {message.from_user.id} removed")
+        await message.answer(text.ON_DELETE_USER)
     await state.clear()
