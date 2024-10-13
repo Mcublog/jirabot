@@ -10,6 +10,7 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
+import jirabot.database.db as db
 import jirabot.jira.client as client
 import jirabot.jira.worklogs as worklog
 import jirabot.ui.common as ui_common
@@ -19,10 +20,11 @@ import jirabot.utils as utils
 from jirabot.jira.worklogs import Worklog
 from jirabot.log_helper import build_loger
 from jirabot.states.issue import IssueData, LogIssue
+from jirabot.states.registration import RegistationData
 from jirabot.ui.text import (ADD_COMMENT, AUTH_ERROR, INCORRECT_ISSUE,
                              INCORRECT_WORKTIME, ISSUE_NOT_FOUND_F,
-                             ISSUES_BY_WEEK_NOT_FOUND, TIME_LOGGED_FAILED,
-                             TIME_LOGGED_SUCCESS)
+                             ISSUES_BY_WEEK_NOT_FOUND, PLEASE_REGISTRATION,
+                             TIME_LOGGED_FAILED, TIME_LOGGED_SUCCESS)
 
 # Configure logging
 log = build_loger('issue', logging.INFO)
@@ -30,14 +32,27 @@ log = build_loger('issue', logging.INFO)
 issue_router = Router()
 
 
+def jira_auth_by_user_id(
+        user_id: int
+) -> tuple[client.JIRA | None, RegistationData | None, str]:
+    if (reg := db.get_reg_date_by_user_id(user_id)) is None:
+        return None, None, PLEASE_REGISTRATION
+
+    jira = client.auth(reg)
+    if not jira:
+        return None, None, AUTH_ERROR
+
+    return jira, reg, ""
+
 @issue_router.message(
     StateFilter(None, LogIssue.choosing_issue_key,
                 LogIssue.choosing_work_time), Command("status"))
 async def command_status_handler(message: Message, state: FSMContext):
-    jira = client.auth()
-    if not jira:
-        await message.reply(AUTH_ERROR)
-        return -1
+
+    jira, reg, msg = jira_auth_by_user_id(message.from_user.id)
+    if not jira or not reg:
+        await message.reply(msg)
+        return
 
     issues = worklog.get_issues_by_user_and_week(jira=jira)
     if not issues:
@@ -51,7 +66,8 @@ async def command_status_handler(message: Message, state: FSMContext):
         current_issue = IssueData(**issue_dict)
     else:
         current_issue = IssueData()
-    current_issue.issues, descriptions = ui_common.create_issue_names(issues)
+    current_issue.issues, descriptions = ui_common.create_issue_names(
+        issues, reg.site)
     output += descriptions
     output.append(
         f'Logged: {result[0]:02d}h {result[1]:02d}m {result[2]:02d}s')
@@ -68,10 +84,12 @@ async def command_status_handler(message: Message, state: FSMContext):
 @issue_router.message(LogIssue.choosing_issue_key,
                       F.text.func(filters.issue_filter))
 async def process_find_word(message: Message, state: FSMContext):
-    jira = client.auth()
-    if not message.text or not jira:
-        await message.answer(AUTH_ERROR)
+
+    jira, reg, msg = jira_auth_by_user_id(message.from_user.id)
+    if not jira or not reg or not message.text:
+        await message.reply(msg)
         return
+
     if (issue := jira.issue(message.text)) is None:
         await message.answer(ISSUE_NOT_FOUND_F.format(message.text))
         return
@@ -127,8 +145,10 @@ async def process_comment(message: Message, state: FSMContext):
     if not current_issue.is_filled():
         return await message.answer(INCORRECT_ISSUE)
 
-    if (jira := client.auth()) is None:
-        return await message.answer(AUTH_ERROR)
+    jira, reg, msg = jira_auth_by_user_id(message.from_user.id)
+    if not jira or not reg or not message.text:
+        await message.reply(msg)
+        return
 
     ret = jira.add_worklog(issue=current_issue.issue_key,
                            timeSpent=current_issue.work_time,

@@ -1,14 +1,12 @@
 import requests
 from jira import JIRA, exceptions
 
-import jirabot.config as cfg
+from jirabot.states.registration import RegistationData
 
 
-def auth(email: str = cfg.USER_EMAIL,
-         token: str = cfg.USER_TOKEN,
-         site: str = cfg.JIRA_SITE) -> JIRA | None:
+def auth(reg_data: RegistationData) -> JIRA | None:
     try:
-        jira = JIRA(site, basic_auth=(email, token))
+        jira = JIRA(reg_data.site, basic_auth=(reg_data.email, reg_data.token))
         jira.myself()
     except exceptions.JIRAError as e:
         print(e.text)

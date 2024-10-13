@@ -64,9 +64,7 @@ async def token_handler(message: Message, state: FSMContext) -> None:
 
     await state.clear()
 
-    if client.auth(email=reg_data.email,
-                   token=reg_data.token,
-                   site=reg_data.site) is None:
+    if client.auth(reg_data) is None:
         db.delete_by_user_id(reg_data.user_id)
         return await message.answer(
             "Не удалось авторизирвоаться в Jira API, проверте свои данные и попробуйте ввести из снова. /start"
