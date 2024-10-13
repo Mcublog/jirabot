@@ -9,9 +9,11 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 import jirabot.config as cfg
+import jirabot.database.db as db
 import jirabot.ui.text as text
 from jirabot.dialogs.issue import issue_router
 from jirabot.dialogs.other import other_router
+from jirabot.dialogs.registration import reg_router
 from jirabot.log_helper import build_loger
 
 # Configure logging
@@ -25,7 +27,10 @@ async def main() -> None:
         log.info(text.BOT_CREATION_ERROR)
         sys.exit(-1)
 
+    db.init()
+
     dp = Dispatcher()
+    dp.include_router(reg_router)
     dp.include_router(issue_router)
     dp.include_router(other_router)
 

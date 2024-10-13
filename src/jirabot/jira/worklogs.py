@@ -1,24 +1,7 @@
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 from jira import JIRA, Issue, Worklog
 
-
-@dataclass
-class UserIssue:
-    userd_id: int = -1
-    issue_key: str = ""
-    work_time: str = ""
-    issues: list[str] = field(default_factory=list)
-
-    def is_filled(self) -> bool:
-        if self.userd_id == -1:
-            return False
-        if not self.issue_key:
-            return False
-        if not self.work_time:
-            return False
-        return True
 
 def get_issues_by_user_and_week(jira: JIRA) -> list[Issue]:
     issues = []

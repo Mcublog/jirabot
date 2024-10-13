@@ -3,9 +3,11 @@ from jira import JIRA, exceptions
 import jirabot.config as cfg
 
 
-def auth() -> JIRA | None:
+def auth(email: str = cfg.USER_EMAIL,
+         token: str = cfg.USER_TOKEN,
+         site: str = cfg.JIRA_SITE) -> JIRA | None:
     try:
-        jira = JIRA(cfg.JIRA_SITE, basic_auth=(cfg.USER_EMAIL, cfg.USER_TOKEN))
+        jira = JIRA(site, basic_auth=(email, token))
         jira.myself()
     except exceptions.JIRAError as e:
         print(e.text)

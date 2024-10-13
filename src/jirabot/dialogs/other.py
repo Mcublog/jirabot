@@ -2,8 +2,8 @@
 
 import logging
 
-from aiogram import Router, html
-from aiogram.filters import Command, CommandStart
+from aiogram import Router
+from aiogram.filters import Command
 from aiogram.types import Message
 
 from jirabot.log_helper import build_loger
@@ -14,11 +14,6 @@ from jirabot.version import VERSION
 log = build_loger('other', logging.INFO)
 
 other_router = Router()
-
-
-@other_router.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
-    await message.answer(f"Hello, {html.bold(message.from_user.full_name)}!")
 
 
 @other_router.message(Command("version"))

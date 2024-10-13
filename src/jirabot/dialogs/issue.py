@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+"""
+Issue time logging FSM stuff
+"""
 
 import logging
 from dataclasses import asdict
@@ -6,7 +8,6 @@ from dataclasses import asdict
 from aiogram import F, Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
 
 import jirabot.jira.client as client
@@ -15,8 +16,9 @@ import jirabot.ui.common as ui_common
 import jirabot.ui.filters as filters
 import jirabot.ui.keyboard as keyboards
 import jirabot.utils as utils
-from jirabot.jira.worklogs import UserIssue, Worklog
+from jirabot.jira.worklogs import Worklog
 from jirabot.log_helper import build_loger
+from jirabot.states.issue import IssueData, LogIssue
 from jirabot.ui.text import (ADD_COMMENT, AUTH_ERROR, INCORRECT_ISSUE,
                              INCORRECT_WORKTIME, ISSUE_NOT_FOUND_F,
                              ISSUES_BY_WEEK_NOT_FOUND, TIME_LOGGED_FAILED,
@@ -26,12 +28,6 @@ from jirabot.ui.text import (ADD_COMMENT, AUTH_ERROR, INCORRECT_ISSUE,
 log = build_loger('issue', logging.INFO)
 
 issue_router = Router()
-
-
-class LogIssue(StatesGroup):
-    choosing_issue_key = State()
-    choosing_work_time = State()
-    choosing_comment = State()
 
 
 @issue_router.message(
@@ -52,9 +48,9 @@ async def command_status_handler(message: Message, state: FSMContext):
     result = utils.summary(timetrack)
     output = ui_common.create_greetings(message)
     if issue_dict := await state.get_data():
-        current_issue = UserIssue(**issue_dict)
+        current_issue = IssueData(**issue_dict)
     else:
-        current_issue = UserIssue()
+        current_issue = IssueData()
     current_issue.issues, descriptions = ui_common.create_issue_names(issues)
     output += descriptions
     output.append(
@@ -83,7 +79,7 @@ async def process_find_word(message: Message, state: FSMContext):
 
     await message.reply('\n'.join(line),
                         reply_markup=keyboards.time_spent_keyboard())
-    current_issue = UserIssue(**await state.get_data())
+    current_issue = IssueData(**await state.get_data())
     current_issue.userd_id = message.from_user.id
     current_issue.issue_key = issue.key
     await state.set_data(asdict(current_issue))
@@ -93,7 +89,7 @@ async def process_find_word(message: Message, state: FSMContext):
 
 @issue_router.message(LogIssue.choosing_issue_key)
 async def incorrect_issue_handler(message: Message, state: FSMContext):
-    current_issue = UserIssue(**await state.get_data())
+    current_issue = IssueData(**await state.get_data())
     await message.reply(INCORRECT_ISSUE,
                         reply_markup=keyboards.issue_keyboard(
                             current_issue.issues))
@@ -109,7 +105,7 @@ async def process_worktime(message: Message, state: FSMContext):
     time_spent = message.text
     log.info(time_spent)
 
-    current_issue = UserIssue(**await state.get_data())
+    current_issue = IssueData(**await state.get_data())
     current_issue.work_time = message.text
     await state.set_data(asdict(current_issue))
 
@@ -126,7 +122,7 @@ async def incorrect_worktime_hanlder(message: Message):
 @issue_router.message(LogIssue.choosing_comment)
 async def process_comment(message: Message, state: FSMContext):
 
-    current_issue = UserIssue(**await state.get_data())
+    current_issue = IssueData(**await state.get_data())
     log.info(f"{current_issue}")
     if not current_issue.is_filled():
         return await message.answer(INCORRECT_ISSUE)
@@ -142,4 +138,4 @@ async def process_comment(message: Message, state: FSMContext):
                                                Worklog) else TIME_LOGGED_FAILED
     await message.answer(answer)
     await state.clear()
-    await state.set_data(asdict(UserIssue()))
+    await state.set_data(asdict(IssueData()))
