@@ -6,7 +6,7 @@ import logging
 from dataclasses import asdict
 
 from aiogram import Router, html
-from aiogram.filters import CommandStart, StateFilter
+from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
@@ -63,13 +63,23 @@ async def token_handler(message: Message, state: FSMContext) -> None:
     reg_data = db.get_reg_date_by_user_id(reg_data.user_id)
 
     await state.clear()
-    await state.set_data(asdict(RegistationData()))
 
     if client.auth(email=reg_data.email,
                    token=reg_data.token,
                    site=reg_data.site) is None:
+        db.delete_by_user_id(reg_data.user_id)
         return await message.answer(
-            "Не удалось авторизирвоаться в Jira API, проверти свои данные и попробуйте ввести из снова"
+            "Не удалось авторизирвоаться в Jira API, проверте свои данные и попробуйте ввести из снова. /start"
         )
 
-    await message.answer("Отлично вы зарегистровались")
+    await message.answer("Отлично Вы успешно зарегистровались. Приступим?😉 /status")
+
+
+@reg_router.message(Command("stop"), StateFilter(None))
+async def stop_handler(message: Message, state: FSMContext) -> None:
+    if not db.get_reg_date_by_user_id(message.from_user.id):
+        await message.answer("Хммм, уже уходите? А ведь вы даже не зарегистрированы")
+    else:
+        db.delete_by_user_id(message.from_user.id)
+        await message.answer("Жаль расстоваться с Вами😢")
+    await state.clear()

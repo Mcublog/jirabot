@@ -65,6 +65,17 @@ def get_reg_date_by_user_id(user_id: int) -> RegistationData | None:
             log.error(e)
     return res
 
+
+def delete_by_user_id(user_id: int):
+    with sqlite3.connect(DB_FILENAME) as connection:
+        cursor = connection.cursor()
+        try:
+            cursor.execute('DELETE FROM Users WHERE user_id = ?', (user_id, ))
+            connection.commit()
+        except sqlite3.IntegrityError as e:
+            log.error(e)
+
+
 if __name__ == "__main__":
     init()
     # add_user(RegistationData(123123, "username", "token", "www.site.com"))

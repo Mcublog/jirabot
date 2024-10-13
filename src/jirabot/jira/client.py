@@ -1,3 +1,4 @@
+import requests
 from jira import JIRA, exceptions
 
 import jirabot.config as cfg
@@ -11,5 +12,8 @@ def auth(email: str = cfg.USER_EMAIL,
         jira.myself()
     except exceptions.JIRAError as e:
         print(e.text)
+        return None
+    except requests.exceptions.MissingSchema as e:
+        print(e)
         return None
     return jira

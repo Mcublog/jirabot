@@ -138,4 +138,3 @@ async def process_comment(message: Message, state: FSMContext):
                                                Worklog) else TIME_LOGGED_FAILED
     await message.answer(answer)
     await state.clear()
-    await state.set_data(asdict(IssueData()))
