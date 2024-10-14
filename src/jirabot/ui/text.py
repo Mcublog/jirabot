@@ -18,7 +18,7 @@ INFO_FOR_REGISTRATION_F = """Привет, {}
 Для работы мне потребуются некоторые данные:
     * Домен вашей Jira например: https://yourcomanyname.atlassian.net
     * Email к которому привязан Jira аккаунт
-    * Токен для достпупа к Jira API: руководства: <a href='https://samarasoft.com/docs/connector-jira/configuration-integration/'>как получить?</a>, <a href='https://docs.searchunify.com/Content/Content-Sources/Atlassian-Jira-Confluence-Authentication-Create-API-Token.htm'>еще одно</a>
+    * Токен для доступа к Jira API: руководства: <a href='https://samarasoft.com/docs/connector-jira/configuration-integration/'>как получить?</a>, <a href='https://docs.searchunify.com/Content/Content-Sources/Atlassian-Jira-Confluence-Authentication-Create-API-Token.htm'>еще одно</a>
 """
 GET_JIRA_SITE = "Пожалуйста🙏, введите домен Jira"
 GET_JIRA_EMAIL = "Пожалуйста🙏, введите Ваш email привязанный к Jira "
