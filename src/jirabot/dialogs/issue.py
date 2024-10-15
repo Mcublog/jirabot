@@ -87,9 +87,15 @@ async def process_find_word(message: Message, state: FSMContext):
         await message.reply(msg)
         return
 
-    if (issue := jira.issue(message.text)) is None:
-        await message.answer(uitext.ISSUE_NOT_FOUND_F.format(message.text))
+    try:
+        if (issue := jira.issue(message.text)) is None:
+            await message.answer(uitext.ISSUE_NOT_FOUND_F.format(message.text))
+            return
+    except client.exceptions.JIRAError as e:
+        await message.answer(
+            uitext.ISSUE_NOT_FOUND_F.format(message.text) + "\r\n" + e.text)
         return
+
     line = [f"[{message.text}]: {issue.fields.summary}"]
 
     await message.reply('\n'.join(line),
