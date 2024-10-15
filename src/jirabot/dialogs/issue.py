@@ -78,7 +78,7 @@ async def command_status_handler(message: Message, state: FSMContext):
     await state.set_data(asdict(current_issue))
 
 
-@issue_router.message(LogIssue.choosing_issue_key,
+@issue_router.message(StateFilter(None, LogIssue.choosing_issue_key),
                       F.text.func(filters.issue_filter))
 async def process_find_word(message: Message, state: FSMContext):
 
