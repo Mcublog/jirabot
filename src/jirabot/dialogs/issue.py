@@ -16,7 +16,7 @@ import jirabot.jira.worklogs as worklog
 import jirabot.ui.common as ui_common
 import jirabot.ui.filters as filters
 import jirabot.ui.keyboard as keyboards
-import jirabot.ui.text as text
+import jirabot.ui.text as uitext
 import jirabot.utils as utils
 from jirabot.jira.worklogs import Worklog
 from jirabot.log_helper import build_loger
@@ -33,11 +33,11 @@ def jira_auth_by_user_id(
         user_id: int
 ) -> tuple[client.JIRA | None, RegistationData | None, str]:
     if (reg := db.get_reg_date_by_user_id(user_id)) is None:
-        return None, None, text.PLEASE_REGISTRATION
+        return None, None, uitext.PLEASE_REGISTRATION
 
     jira = client.auth(reg)
     if not jira:
-        return None, None, text.AUTH_ERROR
+        return None, None, uitext.AUTH_ERROR
 
     return jira, reg, ""
 
@@ -53,7 +53,7 @@ async def command_status_handler(message: Message, state: FSMContext):
 
     issues = worklog.get_issues_by_user_and_week(jira=jira)
     if not issues:
-        await message.reply(text.ISSUES_BY_WEEK_NOT_FOUND)
+        await message.reply(uitext.ISSUES_BY_WEEK_NOT_FOUND)
         return
     worklogs: list[Worklog] = worklog.get_by_user_and_week(issues)
     timetrack = sum([w.timeSpentSeconds for w in worklogs])
@@ -78,7 +78,7 @@ async def command_status_handler(message: Message, state: FSMContext):
     await state.set_data(asdict(current_issue))
 
 
-@issue_router.message(LogIssue.choosing_issue_key,
+@issue_router.message(StateFilter(None, LogIssue.choosing_issue_key),
                       F.text.func(filters.issue_filter))
 async def process_find_word(message: Message, state: FSMContext):
 
@@ -87,9 +87,15 @@ async def process_find_word(message: Message, state: FSMContext):
         await message.reply(msg)
         return
 
-    if (issue := jira.issue(message.text)) is None:
-        await message.answer(text.ISSUE_NOT_FOUND_F.format(message.text))
+    try:
+        if (issue := jira.issue(message.text)) is None:
+            await message.answer(uitext.ISSUE_NOT_FOUND_F.format(message.text))
+            return
+    except client.exceptions.JIRAError as e:
+        await message.answer(
+            uitext.ISSUE_NOT_FOUND_F.format(message.text) + "\r\n" + e.text)
         return
+
     line = [f"[{message.text}]: {issue.fields.summary}"]
 
     await message.reply('\n'.join(line),
@@ -105,7 +111,7 @@ async def process_find_word(message: Message, state: FSMContext):
 @issue_router.message(LogIssue.choosing_issue_key)
 async def incorrect_issue_handler(message: Message, state: FSMContext):
     current_issue = IssueData(**await state.get_data())
-    await message.reply(text.INCORRECT_ISSUE,
+    await message.reply(uitext.INCORRECT_ISSUE,
                         reply_markup=keyboards.issue_keyboard(
                             current_issue.issues))
 
@@ -114,7 +120,7 @@ async def incorrect_issue_handler(message: Message, state: FSMContext):
                       F.text.func(filters.worktime_filter))
 async def process_worktime(message: Message, state: FSMContext):
     if not message.text:
-        await message.answer(text.INCORRECT_WORKTIME)
+        await message.answer(uitext.INCORRECT_WORKTIME)
         return
 
     time_spent = message.text
@@ -124,13 +130,13 @@ async def process_worktime(message: Message, state: FSMContext):
     current_issue.work_time = message.text
     await state.set_data(asdict(current_issue))
 
-    await message.answer(text.ADD_COMMENT)
+    await message.answer(uitext.ADD_COMMENT)
     await state.set_state(LogIssue.choosing_comment)
 
 
 @issue_router.message(LogIssue.choosing_work_time)
 async def incorrect_worktime_hanlder(message: Message):
-    await message.reply(text.INCORRECT_WORKTIME,
+    await message.reply(uitext.INCORRECT_WORKTIME,
                         reply_markup=keyboards.time_spent_keyboard())
 
 
@@ -140,7 +146,7 @@ async def process_comment(message: Message, state: FSMContext):
     current_issue = IssueData(**await state.get_data())
     log.info(f"{current_issue}")
     if not current_issue.is_filled():
-        return await message.answer(text.INCORRECT_ISSUE)
+        return await message.answer(uitext.INCORRECT_ISSUE)
 
     jira, reg, msg = jira_auth_by_user_id(message.from_user.id)
     if not jira or not reg or not message.text:
@@ -151,7 +157,7 @@ async def process_comment(message: Message, state: FSMContext):
                            timeSpent=current_issue.work_time,
                            comment=message.text)
 
-    answer = text.TIME_LOGGED_SUCCESS if isinstance(ret,
-                                               Worklog) else text.TIME_LOGGED_FAILED
+    answer = uitext.TIME_LOGGED_SUCCESS if isinstance(ret,
+                                               Worklog) else uitext.TIME_LOGGED_FAILED
     await message.answer(answer)
     await state.clear()
