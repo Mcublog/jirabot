@@ -1,6 +1,15 @@
 name: BuildBinary
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: string
+        default: DEV
+        required: false
+  push:
+    branches:
+      - master
 
 jobs:
   build_bot:
