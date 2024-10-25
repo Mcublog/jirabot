@@ -3,9 +3,6 @@ Description=JiraBot startup script
 
 [Service]
 # Tokens for Jira
-Environment="JIRA_TOKEN="
-Environment="JIRA_EMAIL="
-Environment="JIRA_SITE="
 Environment="JIRA_BOT_TELEGRAM_TOKEN="
 
 ExecStart=/home/viacheslav/Program/JiraBot/run.sh start
