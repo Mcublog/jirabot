@@ -55,7 +55,9 @@ async def command_status_handler(message: Message, state: FSMContext):
     if not issues:
         await message.reply(uitext.ISSUES_BY_WEEK_NOT_FOUND)
         return
-    worklogs: list[Worklog] = worklog.get_by_user_and_week(issues)
+
+    worklogs: list[Worklog] = worklog.get_worklogs_by_issues(jira, issues)
+    worklogs = worklog.by_week(worklogs)
     timetrack = sum([w.timeSpentSeconds for w in worklogs])
     result = utils.summary(timetrack)
     output = ui_common.create_greetings(message)
