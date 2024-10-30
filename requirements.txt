@@ -3,3 +3,4 @@ jira==3.8.0
 aiogram==3.11
 colorama>=0.4.5
 # polars==1.4.1
+scanf==1.5.2
