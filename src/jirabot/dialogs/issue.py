@@ -57,7 +57,7 @@ async def command_status_handler(message: Message, state: FSMContext):
         return
 
     worklogs: list[Worklog] = worklog.get_worklogs_by_issues(jira, issues)
-    worklogs = worklog.by_week(worklogs)
+    worklogs = worklog.by_week(worklogs, jira.myself()['accountId'])
     timetrack = sum([w.timeSpentSeconds for w in worklogs])
     result = utils.summary(timetrack)
     output = ui_common.create_greetings(message)
