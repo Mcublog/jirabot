@@ -10,7 +10,7 @@ def get_worklogs_by_issues(jira: JIRA, issues: list[Issue]) -> list[Worklog]:
     return worklogs
 
 
-def by_week(worklogs: list[Worklog]) -> list[Worklog]:
+def by_week(worklogs: list[Worklog], account_id: str) -> list[Worklog]:
     worklogs_by_week: list[Worklog] = []
     now = datetime.now(timezone.utc).replace(hour=0,
                                              minute=0,
@@ -21,6 +21,8 @@ def by_week(worklogs: list[Worklog]) -> list[Worklog]:
                                                       minute=0,
                                                       second=0,
                                                       microsecond=0)
+        if w.updateAuthor.accountId != account_id:
+            continue
         if t < now - timedelta(days=7):
             continue
         worklogs_by_week.append(w)
