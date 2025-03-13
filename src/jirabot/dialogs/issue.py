@@ -155,11 +155,14 @@ async def process_comment(message: Message, state: FSMContext):
         await message.reply(msg)
         return
 
-    ret = jira.add_worklog(issue=current_issue.issue_key,
-                           timeSpent=current_issue.work_time,
-                           comment=message.text)
-
-    answer = uitext.TIME_LOGGED_SUCCESS if isinstance(ret,
-                                               Worklog) else uitext.TIME_LOGGED_FAILED
+    try:
+        ret = jira.add_worklog(issue=current_issue.issue_key,
+                               timeSpent=current_issue.work_time,
+                               comment=message.text)
+    except Exception as e:
+        log.error(e)
+        ret = None
+    answer = uitext.TIME_LOGGED_SUCCESS if isinstance(
+        ret, Worklog) else uitext.TIME_LOGGED_FAILED
     await message.answer(answer)
     await state.clear()
