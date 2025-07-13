@@ -7,6 +7,7 @@ import sys
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.types import BotCommand, BotCommandScopeDefault
 
 import jirabot.config as cfg
 import jirabot.database.db as db
@@ -18,6 +19,14 @@ from jirabot.log_helper import build_loger
 
 # Configure logging
 log = build_loger('bot', logging.INFO)
+
+
+async def set_commands(bot: Bot):
+    commands = [
+        BotCommand(command='status', description=text.STATUS_MENU_TEXT),
+    ]
+    await bot.set_my_commands(commands, BotCommandScopeDefault())
+
 
 async def main() -> None:
     try:
@@ -35,6 +44,7 @@ async def main() -> None:
     dp.include_router(other_router)
 
     await dp.start_polling(bot)
+    await set_commands(bot)
 
 
 if __name__ == "__main__":
