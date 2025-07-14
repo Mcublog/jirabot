@@ -13,6 +13,7 @@ import jirabot.config as cfg
 import jirabot.database.db as db
 import jirabot.ui.text as text
 from jirabot.dialogs.issue import issue_router
+from jirabot.dialogs.jsql_request import jsql_router
 from jirabot.dialogs.other import other_router
 from jirabot.dialogs.registration import reg_router
 from jirabot.log_helper import build_loger
@@ -24,6 +25,7 @@ log = build_loger('bot', logging.INFO)
 async def set_commands(bot: Bot):
     commands = [
         BotCommand(command='status', description=text.STATUS_MENU_TEXT),
+        BotCommand(command='jsql', description=text.JIRA_SQL_CUSTOM_REQUEST),
     ]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 
@@ -40,6 +42,7 @@ async def main() -> None:
 
     dp = Dispatcher()
     dp.include_router(reg_router)
+    dp.include_router(jsql_router)
     dp.include_router(issue_router)
     dp.include_router(other_router)
 

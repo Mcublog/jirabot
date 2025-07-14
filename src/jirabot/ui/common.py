@@ -14,13 +14,13 @@ def create_greetings(message: Message) -> list[str]:
         YOU_WORKING_WITH, ""
     ]
 
-def create_issue_names(issues: list[Issue], site: str) -> tuple[list[str], list[str]]:
+def create_issue_names(issues: list[Issue], site: str, ) -> tuple[list[str], list[str]]:
     issues_key = []
     descriptions = []
     for i in issues:
-        line = f'[{i.key}]: {i.fields.summary}'
+        line = f'`{i.key}`: {i.fields.summary}'
         descriptions.append(line)
-        issues_key.append(i.key)
+        issues_key.append(f"{i.key}")
         descriptions.append(f"{site}/browse/{i.key}")
         descriptions.append('')
     return issues_key, descriptions
