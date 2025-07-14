@@ -113,6 +113,7 @@ async def process_find_word(message: Message, state: FSMContext):
 
 @issue_router.message(LogIssue.choosing_issue_key)
 async def incorrect_issue_handler(message: Message, state: FSMContext):
+    await state.clear()
     current_issue = IssueData(**await state.get_data())
     await message.reply(uitext.INCORRECT_ISSUE,
                         reply_markup=keyboards.issue_keyboard(
