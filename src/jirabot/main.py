@@ -26,6 +26,7 @@ async def set_commands(bot: Bot):
     commands = [
         BotCommand(command='status', description=text.STATUS_MENU_TEXT),
         BotCommand(command='jsql', description=text.JIRA_SQL_CUSTOM_REQUEST),
+        BotCommand(command='version', description=text.APP_VERSION_DESCRIPTION),
     ]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 
