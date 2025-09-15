@@ -17,10 +17,7 @@ def by_week(worklogs: list[Worklog], account_id: str) -> list[Worklog]:
                                              second=0,
                                              microsecond=0)
     for w in worklogs:
-        t = datetime.fromisoformat(w.created).replace(hour=0,
-                                                      minute=0,
-                                                      second=0,
-                                                      microsecond=0)
+        t = datetime.strptime(w.created, '%Y-%m-%dT%H:%M:%S.%f%z')
         if w.updateAuthor.accountId != account_id:
             continue
         if t < now - timedelta(days=7):
