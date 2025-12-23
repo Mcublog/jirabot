@@ -74,7 +74,7 @@ async def command_status_handler(message: Message, state: FSMContext):
     log.info(text)
 
     await message.answer(text,
-                         parse_mode="Markdown",
+                         parse_mode="HTML",
                          reply_markup=keyboards.issue_keyboard(
                              current_issue.issues))
     await state.set_state(LogIssue.choosing_issue_key)

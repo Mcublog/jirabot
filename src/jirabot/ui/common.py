@@ -18,7 +18,8 @@ def create_issue_names(issues: list[Issue], site: str, ) -> tuple[list[str], lis
     issues_key = []
     descriptions = []
     for i in issues:
-        line = f'`{i.key}`: {i.fields.summary}'
+        summary = i.fields.summary.replace("%", "%%")
+        line = f'{i.key}: {summary}' # TODO: копирование в MD f'`{i.key}`: {i.fields.summary}' не работает в HTML
         descriptions.append(line)
         issues_key.append(f"{i.key}")
         descriptions.append(f"{site}/browse/{i.key}")
